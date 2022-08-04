@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
+import "sweetalert2/dist/sweetalert2.min.css";
 import Modal from "react-modal";
 import DatePicker, { registerLocale, setDefaultLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { addHours, differenceInSeconds } from "date-fns";
 import es from "date-fns/locale/es";
 
-import "sweetalert2/dist/sweetalert2.min.css";
-import "react-datepicker/dist/react-datepicker.css";
+
+import { useCalendarStore, useUiStore } from "../../hooks";
 
 registerLocale("es", es);
 
@@ -24,11 +26,13 @@ const customStyles = {
 Modal.setAppElement("#root");
 
 export const CalendarModal = () => {
-	const [isModalOpen, setIsModalOpen] = useState(true);
+	const { isDateModalOpen, closeDateModal } = useUiStore();
+	const { activeEvent, startSavingEvent } = useCalendarStore();
+
 	const [formSubmitted, setFormSubmitted] = useState(false);
 	const [formValues, setFormValues] = useState({
-		title: "Alex",
-		notes: "Salgado",
+		title: "",
+		notes: "",
 		start: new Date(),
 		end: addHours(new Date(), 2),
 	});
@@ -40,6 +44,12 @@ export const CalendarModal = () => {
 
 		return formValues.title.length > 0 ? "" : "is-invalid";
 	}, [formValues.title, formSubmitted]);
+
+	useEffect(() => {
+		if (activeEvent !== null) {
+			setFormValues({ ...activeEvent });
+		}
+	}, [activeEvent]);
 
 	const onChange = ({ target }) => {
 		setFormValues({
@@ -56,10 +66,10 @@ export const CalendarModal = () => {
 	};
 
 	const onCloseModal = () => {
-		setIsModalOpen(false);
+		closeDateModal();
 	};
 
-	const onSubmit = (event) => {
+	const onSubmit = async (event) => {
 		event.preventDefault();
 
 		setFormSubmitted(true);
@@ -75,12 +85,16 @@ export const CalendarModal = () => {
 			return;
 		}
 
-		console.log(formValues);
+		await startSavingEvent(formValues);
+
+		closeDateModal();
+
+		setFormSubmitted(false);
 	};
 
 	return (
 		<Modal
-			isOpen={isModalOpen}
+			isOpen={isDateModalOpen}
 			onRequestClose={onCloseModal}
 			style={customStyles}
 			className="modal"
@@ -128,7 +142,7 @@ export const CalendarModal = () => {
 						placeholder="Título del evento"
 						name="title"
 						autoComplete="off"
-						value={formValues.title}
+						value={formValues.title || ""}
 						onChange={onChange}
 					/>
 					<small id="emailHelp" className="form-text text-muted">
@@ -143,7 +157,7 @@ export const CalendarModal = () => {
 						placeholder="Notas"
 						rows="5"
 						name="notes"
-						value={formValues.notes}
+						value={formValues.notes || ""}
 						onChange={onChange}
 					></textarea>
 					<small id="emailHelp" className="form-text text-muted">
