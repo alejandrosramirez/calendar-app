@@ -7,8 +7,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import { addHours, differenceInSeconds } from "date-fns";
 import es from "date-fns/locale/es";
 
-
 import { useCalendarStore, useUiStore } from "../../hooks";
+import { getEnvironments } from "../../helpers";
 
 registerLocale("es", es);
 
@@ -23,7 +23,9 @@ const customStyles = {
 	},
 };
 
-Modal.setAppElement("#root");
+if (getEnvironments().VITE_MODE !== "test") {
+	Modal.setAppElement("#root");
+}
 
 export const CalendarModal = () => {
 	const { isDateModalOpen, closeDateModal } = useUiStore();

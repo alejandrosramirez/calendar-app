@@ -15,6 +15,7 @@ export const FabDelete = () => {
 			}}
 			className="btn btn-danger fab-danger"
 			onClick={onDeleteEvent}
+			aria-label="btn-delete"
 		>
 			<i className="fas fa-trash-alt"></i>
 		</button>
