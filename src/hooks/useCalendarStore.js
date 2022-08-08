@@ -1,10 +1,21 @@
 import { useDispatch, useSelector } from "react-redux";
+import Swal from "sweetalert2";
 
-import { onCreateEvent, onDeleteEvent, onSetActiveEvent, onUpdateEvent } from "../store";
+import { calendarApi } from "../api";
+import { parseEventDates } from "../helpers";
+
+import {
+	onCreateEvent,
+	onDeleteEvent,
+	onLoadEvents,
+	onSetActiveEvent,
+	onUpdateEvent,
+} from "../store";
 
 export const useCalendarStore = () => {
 	const dispatch = useDispatch();
 
+	const { user } = useSelector((state) => state.auth);
 	const { events, activeEvent } = useSelector((state) => state.calendar);
 
 	const setActiveEvent = (event) => {
@@ -12,27 +23,71 @@ export const useCalendarStore = () => {
 	};
 
 	const startSavingEvent = async (event) => {
-		// TODO: Make api request
+		try {
+			if (event.id) {
+				await calendarApi.put(`/events/${event.id}`, event);
 
-		if (event._id) {
-			dispatch(onUpdateEvent({ ...event }));
-		} else {
-			dispatch(onCreateEvent({ ...event, _id: new Date().getTime() }));
+				dispatch(onUpdateEvent({ ...event, user }));
+
+				return;
+			}
+
+			const { data } = await calendarApi.post("/events", event);
+
+			dispatch(onCreateEvent({ ...event, id: data.event?.id, user }));
+		} catch (error) {
+			console.log(`Ocurrió este error: ${error}`);
+
+			Swal.fire(
+				"Error al guardar el evento",
+				error.response.data?.message,
+				"error"
+			);
 		}
 	};
 
-	const startDeletingEvent = () => {
-		// TODO: Make api request
-		dispatch(onDeleteEvent());
+	const startDeletingEvent = async () => {
+		try {
+			await calendarApi.delete(`/events/${activeEvent.id}`);
+
+			dispatch(onDeleteEvent());
+		} catch (error) {
+			console.log(`Ocurrió este error: ${error}`);
+
+			Swal.fire(
+				"Error al eliminar el evento",
+				error.response.data?.message,
+				"error"
+			);
+		}
+	};
+
+	const startLoadingEvents = async () => {
+		try {
+			const { data } = await calendarApi.get("/events");
+
+			const events = parseEventDates(data.events);
+
+			dispatch(onLoadEvents(events));
+		} catch (error) {
+			console.log(`Ocurrió este error: ${error}`);
+
+			Swal.fire(
+				"Error",
+				"No se cargaron los eventos correctamente",
+				"error"
+			);
+		}
 	};
 
 	return {
 		events,
 		activeEvent,
-		hasActiveEvent: !!activeEvent?._id,
+		hasActiveEvent: !!activeEvent?.id,
 
 		setActiveEvent,
 		startSavingEvent,
 		startDeletingEvent,
+		startLoadingEvents,
 	};
 };
