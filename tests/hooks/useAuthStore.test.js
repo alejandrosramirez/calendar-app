@@ -163,7 +163,6 @@ describe("Pruebas en useAuthStore", () => {
 	test("Debe de autenticar al usuario si hay token", async () => {
 		const { data } = await calendarApi.post("/auth/login", testUser);
 		localStorage.setItem("token", data.token);
-		console.log(data);
 		const mockStore = getMockStore({ ...initialState });
 		const { result } = renderHook(() => useAuthStore(), {
 			wrapper: ({ children }) => (
